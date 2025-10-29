@@ -1,0 +1,85 @@
+# Advanced path replacement function
+path_tool() {
+    case "$1" in
+        "replace")
+            if [ $# -ne 3 ]; then
+                echo "Usage: path_tool replace <old_path> <new_path>"
+                return 1
+            fi
+            local old_path="$2"
+            local new_path="$3"
+            local new_paths=""
+            local found=0
+            
+            IFS=: read -ra paths <<< "$PATH"
+            for path in "${paths[@]}"; do
+                if [ "$path" = "$old_path" ]; then
+                    new_paths="${new_paths}${new_path}:"
+                    found=1
+                else
+                    new_paths="${new_paths}${path}:"
+                fi
+            done
+            
+            new_paths="${new_paths%:}"
+            export PATH="$new_paths"
+            
+            if [ $found -eq 1 ]; then
+                echo "✓ Replaced: $old_path → $new_path"
+            else
+                echo "⚠ '$old_path' not found in PATH, adding '$new_path'"
+                export PATH="${new_path}:${PATH}"
+            fi
+            ;;
+            
+        "remove")
+            if [ $# -ne 2 ]; then
+                echo "Usage: path_tool remove <path_to_remove>"
+                return 1
+            fi
+            local remove_path="$2"
+            local new_paths=""
+            local found=0
+            
+            IFS=: read -r -A paths <<< "$PATH"
+            for path in "${paths[@]}"; do
+                if [ "$path" != "$remove_path" ]; then
+                    new_paths="${new_paths}${path}:"
+                else
+                    found=1
+                fi
+            done
+            
+            new_paths="${new_paths%:}"
+            export PATH="$new_paths"
+            
+            if [ $found -eq 1 ]; then
+                echo "✓ Removed from PATH: $remove_path"
+            else
+                echo "⚠ Path not found in PATH: $remove_path"
+            fi
+            ;;
+            
+        "list")
+            echo "Current PATH:"
+            echo "$PATH" | tr ':' '\n' | nl -v1
+            ;;
+            
+        *)
+            echo "Usage: path_tool <command>"
+            echo "Commands:"
+            echo "  replace <old_path> <new_path> - Replace path in PATH"
+            echo "  remove <path> - Remove path from PATH"
+            echo "  list - Show current PATH"
+            ;;
+    esac
+}
+
+disable_docker() {
+  path_tool remove "/usr/local/docker"
+}
+
+enable_docker() {
+  [[ ":$PATH:" == *":/usr/local/docker:"* ]] && echo "Already in path!" || export PATH=/usr/local/docker:$PATH
+}
+
