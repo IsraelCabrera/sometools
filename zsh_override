@@ -1,9 +1,48 @@
 # agnoster style, only display 3 last directories from current path
 prompt_dir() {
+  local current_path="$PWD"
+  local display_path
+  
+  # Function to format path with consistent rules
+  format_path() {
+    local path="$1"
+    local home_shortened=false
+    
+    # Shorten home directory to ~
+    if [[ "$path" == "$HOME" ]]; then
+      echo "~"
+      return
+    elif [[ "$path" == "$HOME/"* ]]; then
+      path="~${path#$HOME}"
+      home_shortened=true
+    fi
+    
+    # Count path components
+    local path_components=(${(s:/:)path})
+    local num_components=${#path_components[@]}
+    
+    # Remove empty first component if path starts with / (absolute path)
+    if [[ -z "${path_components[1]}" && "$home_shortened" == "false" ]]; then
+      path_components=(${path_components[@]:1})
+      num_components=$((num_components - 1))
+    fi
+    
+    if [[ $num_components -le 2 ]]; then
+      # Show full path if 2 or fewer components
+      echo "$path"
+    else
+      # Show last 2 components with ... prefix
+      echo ".../${path_components[-2]}/${path_components[-1]}"
+    fi
+  }
+  
   if [[ $AGNOSTER_GIT_INLINE == 'true' ]] && $(git rev-parse --is-inside-work-tree >/dev/null 2>&1); then
-    # Git repo and inline path enabled, hence only show the git root
-    prompt_segment "$AGNOSTER_DIR_BG" "$AGNOSTER_DIR_FG" "$(git_toplevel | sed "s:^$HOME:3~:")"
+    # Git repo and inline path enabled - apply formatting to current path
+    display_path=$(format_path "$current_path")
+    prompt_segment "$AGNOSTER_DIR_BG" "$AGNOSTER_DIR_FG" "$(git_toplevel | $display_path)"
   else
-    prompt_segment "$AGNOSTER_DIR_BG" "$AGNOSTER_DIR_FG" '%3~'
+    # Regular path
+    display_path=$(format_path "$current_path")
+    prompt_segment "$AGNOSTER_DIR_BG" "$AGNOSTER_DIR_FG" "$display_path"
   fi
 }
