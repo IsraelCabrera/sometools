@@ -46,3 +46,13 @@ prompt_dir() {
     prompt_segment "$AGNOSTER_DIR_BG" "$AGNOSTER_DIR_FG" "$display_path"
   fi
 }
+
+# for the python virtual environment, also show the parent directory
+prompt_virtualenv() {
+  if [ -n "$CONDA_DEFAULT_ENV" ]; then
+    prompt_segment magenta $CURRENT_FG "🐍 $CONDA_DEFAULT_ENV"
+  fi
+  if [[ -n "$VIRTUAL_ENV" && -n "$VIRTUAL_ENV_DISABLE_PROMPT" ]]; then
+    prompt_segment "$AGNOSTER_VENV_BG" "$AGNOSTER_VENV_FG" "(${VIRTUAL_ENV:h:t:gs/%/%%}/${VIRTUAL_ENV:t:gs/%/%%})"
+  fi
+}
