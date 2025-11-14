@@ -60,6 +60,126 @@ deactivate_venv() {
     fi
 }
 
+create_venv_by_module() {
+
+    local python_cmd="$1"
+    local module_command="$2"
+    local venv_name="$3"
+    local module_list_versions
+    local module_set_local_version
+    local module_check_version
+    local module_install_version
+    local selected_version
+
+    case "$module_command" in
+        pyenv*)
+            module_list_versions="pyenv versions --bare | grep -v "system" | sort -V"
+            module_set_local_version="pyenv local "
+            module_check_version="pyenv versions --bare | grep -q "
+            module_install_version="pyenv install "
+            ;;
+        uv*)
+            module_list_versions="uv python list --only-installed | awk -F'-' '{print \$2}' | sort -uV | sort -rV"
+            module_set_local_version="uv python pin "
+            module_check_version="uv python list --only-installed | grep -q "
+            module_install_version="uv python install "
+            ;;
+    esac
+
+    if command -v "$module_command" &> /dev/null; then
+        echo "🐍 $module_command detected"
+        
+        # Get available Python versions
+        local available_versions
+        available_versions=$(eval $module_list_versions)
+        
+        if [[ -n "$available_versions" ]]; then
+            echo "Available Python versions:"
+            
+            # Display versions in a numbered list
+            local i=1
+            local versions_array=()
+            while IFS= read -r version; do
+                versions_array+=("$version")
+                echo "  $i) $version"
+                ((i++))
+            done <<< "$available_versions"
+            
+            echo "  $i) Use system Python"
+            echo
+            
+            local choice
+            read "choice?Select Python version (1 - $i, or enter version directly): "
+            
+            if [[ "$choice" =~ ^[0-9]+$ ]] && [[ $choice -ge 1 ]] && [[ $choice -le $i ]]; then
+                if [[ $choice -eq $i ]]; then
+                    echo "🔧 Using system Python"
+                else
+                    selected_version="${versions_array[$((choice))]}"
+                    echo "🔧 Using Python $selected_version via $module_command"
+                    
+                    # Set local version for this directory
+                    if ! eval "$module_set_local_version $selected_version"; then
+                        echo "☠️ error in selection version $selected_version"
+                        return 1
+                    fi
+                fi
+            elif [[ -n "$choice" ]]; then
+                # User entered a version directly
+                selected_version="$choice"
+                
+                # Check if the selected version is installed
+                if ! eval "$module_check_version '$selected_version'"; then
+                    echo "📥 Python version $selected_version not found. Installing/Upgrading..."
+                    if eval "$module_install_version $selected_version"; then
+                        echo "✅ Successfully installed Python $selected_version"
+                    else
+                        echo "❌ Failed to install Python $selected_version"
+                        echo "Using system Python"
+                        selected_version=""
+                    fi
+                fi
+                
+                if [[ -n "$selected_version" ]]; then
+                    echo "🔧 Using Python $selected_version via $module_command"
+                    eval "$module_set_local_version $selected_version"
+                fi
+            fi
+        else
+            echo "ℹ️ No $module_command versions available, using system Python"
+        fi
+    else
+        echo "ℹ️ $module_command not found, using system Python"
+    fi
+    
+    echo "🚀 Creating virtual environment: $venv_name"
+    
+    # Create virtual environment
+    case "$module_command" in
+        pyenv*)
+            if $python_cmd -c "import venv" 2>/dev/null; then
+                if $python_cmd -m venv "$venv_name"; then
+                    activate_venv
+                else
+                    echo "❌ Failed to create virtual environment"
+                    return 1
+                fi
+            else
+                echo "❌ venv module not available in selected Python version"
+                return 1
+            fi
+            ;;
+        uv*)
+            if uv venv --python "$selected_version"; then
+                activate_venv
+            else
+                echo "☠️ Failed to create virtual environment"
+                return 1
+            fi
+            ;;
+    esac
+}
+
 # Function to create and activate a new virtual environment
 create_venv() {
     local venv_name="${1:-venv}"
@@ -76,14 +196,16 @@ create_venv() {
         fi
     fi
     
-    echo "🚀 Creating virtual environment: $venv_name"
-    python -m venv "$venv_name"
-    
-    if [[ $? -eq 0 ]]; then
-        activate_venv
+    local python_cmd="python"
+    if command -v uv &> /dev/null; then
+        create_venv_by_module "$python_cmd" "uv" "$venv_name"
+    elif command -v pyenv &> /dev/null; then
+        create_venv_by_module "$python_cmd" "pyenv" "$venv_name"
     else
-        echo "❌ Failed to create virtual environment"
-        return 1
+        echo "☠️ No virtual environment manager available"
+        read -p "❓ Would you want to install UV? [N/y] " -e -n 1 -r
+        [[ "$REPLY" =~ ^[Yy]$ ]] || return 1
+        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
 }
 
