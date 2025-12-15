@@ -1,0 +1,4 @@
+# assign IP to environment variable
+#TODO: use conditions depending on the OS so it gets the correct device
+IP=$(ifconfig en0 | grep inet | awk '$1=="inet" {print $2}')
+
