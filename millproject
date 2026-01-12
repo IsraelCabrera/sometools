@@ -1,0 +1,25 @@
+# Pcb2GCode settings
+output-dir=/data/gcode
+metric=true
+metricoutput=true
+zero-start=true
+zsafe=5
+zchange=10
+zwork=-0.5
+mill-feed=100
+mill-speed=18000
+zdrill=-2
+drill-feed=100
+drill-speed=18000
+drill-side=back
+zcut=-2
+cutter-diameter=4
+cut-feed=80
+cut-speed=18000
+cut-infeed=80
+cut-side=back
+bridges=4
+bridgesnum=4
+tsp-2opt=true
+path-finding-limit=5
+#al-back=true
