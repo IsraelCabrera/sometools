@@ -1,0 +1,12 @@
+[project]
+name = "airllm"
+version = "0.1.0"
+description = "AirLLM optimizes inference memory usage, allowing 70B large language models to run inference on a single 4GB GPU card without quantization, distillation and pruning. And you can run 405B Llama3.1 on 8GB vram now."
+readme = "README.md"
+requires-python = "==3.12.12"
+dependencies = [
+  "optimum<2.0", 
+  "transformers==4.43.3", 
+  "sentencepiece", 
+  "airllm"
+]
