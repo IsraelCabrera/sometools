@@ -170,7 +170,7 @@ create_venv_by_module() {
             fi
             ;;
         uv*)
-            if uv venv --python "$selected_version"; then
+            if uv venv --python "$selected_version" "$venv_name"; then
                 activate_venv
             else
                 echo "☠️ Failed to create virtual environment"
