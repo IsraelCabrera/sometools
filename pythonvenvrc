@@ -1,6 +1,7 @@
 # Function to activate Python virtual environment
 activate_venv() {
     local venv_dirs=("venv" ".venv" "env" ".env" "virtualenv")
+    local used_venv_dir="$1"
     local activate_script="bin/activate"
     local found_venv=""
     
@@ -14,16 +15,23 @@ activate_venv() {
             ;;
     esac
     
-    # Look for virtual environment in common directories
-    for venv_dir in $venv_dirs; do
-        if [[ -d "$venv_dir" && -f "$venv_dir/$activate_script" ]]; then
-            found_venv="$venv_dir"
-            break
+    if [[ -n "$used_venv_dir" ]]; then
+        if [[ -d "$used_venv_dir" && -f "$used_venv_dir/$activate_script" ]]; then
+            found_venv="$used_venv_dir"
+        else
+            # Look for virtual environment in common directories
+            for venv_dir in $venv_dirs; do
+                if [[ -d "$venv_dir" && -f "$venv_dir/$activate_script" ]]; then
+                    found_venv="$venv_dir"
+                    break
+                fi
+            done
         fi
-    done
+    fi
     
     # If no common directory found, look for any directory with activate script
     if [[ -z "$found_venv" ]]; then
+        echo "🔍 Searching for virtual environment in current directory..."
         for dir in */; do
             if [[ -f "$dir/$activate_script" ]]; then
                 found_venv="${dir%/}"
