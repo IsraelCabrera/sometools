@@ -17,16 +17,19 @@ activate_venv() {
     
     if [[ -n "$used_venv_dir" ]]; then
         if [[ -d "$used_venv_dir" && -f "$used_venv_dir/$activate_script" ]]; then
+            echo "🔍 Activating specified virtual environment: $used_venv_dir"
             found_venv="$used_venv_dir"
-        else
-            # Look for virtual environment in common directories
-            for venv_dir in $venv_dirs; do
-                if [[ -d "$venv_dir" && -f "$venv_dir/$activate_script" ]]; then
-                    found_venv="$venv_dir"
-                    break
-                fi
-            done
         fi
+    fi
+    if [[ -z "$found_venv" ]]; then
+        # Look for virtual environment in common directories
+        for venv_dir in $venv_dirs; do
+            if [[ -d "$venv_dir" && -f "$venv_dir/$activate_script" ]]; then
+                echo "🔍 Found virtual environment in: $venv_dir"
+                found_venv="$venv_dir"
+                break
+            fi
+        done
     fi
     
     # If no common directory found, look for any directory with activate script
@@ -167,7 +170,7 @@ create_venv_by_module() {
         pyenv*)
             if $python_cmd -c "import venv" 2>/dev/null; then
                 if $python_cmd -m venv "$venv_name"; then
-                    activate_venv
+                    activate_venv "$venv_name"
                 else
                     echo "❌ Failed to create virtual environment"
                     return 1
@@ -179,7 +182,7 @@ create_venv_by_module() {
             ;;
         uv*)
             if uv venv --python "$selected_version" "$venv_name"; then
-                activate_venv
+                activate_venv "$venv_name"
             else
                 echo "☠️ Failed to create virtual environment"
                 return 1
@@ -199,7 +202,7 @@ create_venv() {
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             rm -rf "$venv_name"
         else
-            activate_venv
+            activate_venv "$venv_name"
             return
         fi
     fi
