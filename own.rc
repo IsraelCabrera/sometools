@@ -2,3 +2,7 @@
 #TODO: use conditions depending on the OS so it gets the correct device
 IP=$(ifconfig en0 | grep inet | awk '$1=="inet" {print $2}')
 
+# Android SCRCPY tools
+alias scrcpy='/Users/israel/dev/tools/scrcpy/scrcpy "${@}" &> /dev/null & disown'
+alias android_record_video='/Users/israel/dev/tools/scrcpy/scrcpy --record "android_video_$(date +%Y%m%d_%H%M%S).mp4" "${@}" &> /dev/null & disown'
+alias android_screenshot='/Users/israel/Library/Android/sdk/platform-tools/adb shell screencap -p > android_screenshot_$(date +%Y%m%d_%H%M%S).png'
